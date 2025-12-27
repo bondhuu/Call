@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BondhuCall - Private & Secure</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --bg: #FFDE59;
+            --main: #FF914D;
+            --white: #FFFFFF;
+            --black: #000000;
+            --green: #4CAF50;
+        }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--black);
+        }
+
+        .card {
+            background: var(--main);
+            padding: 30px;
+            border-radius: 40px;
+            border: 6px solid var(--black);
+            box-shadow: 12px 12px 0px var(--black);
+            width: 380px;
+            text-align: center;
+            position: relative;
+        }
+
+        .id-box {
+            background: var(--white);
+            border: 4px solid var(--black);
+            padding: 15px;
+            border-radius: 20px;
+            margin: 15px 0;
+            font-size: 22px;
+            color: #FF3131;
+            word-wrap: break-word;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 15px;
+            border: 4px solid var(--black);
+            font-family: inherit;
+        }
+
+        .btn {
+            background: var(--green);
+            color: var(--white);
+            padding: 12px 25px;
+            border-radius: 20px;
+            border: 4px solid var(--black);
+            box-shadow: 5px 5px 0px var(--black);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 18px;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+
+        .btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0px var(--black);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #fff;
+            border-radius: 50px;
+            border: 2px solid #000;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        #video-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        video {
+            width: 100%;
+            border: 4px solid #000;
+            border-radius: 20px;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="status-badge" id="online-status">অফলাইন 🔴</div>
+    <h2 style="-webkit-text-stroke: 1px black; color: white;">আপনার প্রাইভেট আইডি</h2>
+    
+    <div class="id-box" id="my-id-display">তৈরি হচ্ছে...</div>
+    <p id="country-info">আপনার দেশ: খোঁজা হচ্ছে...</p>
+
+    <hr style="border: 2px solid black;">
+
+    <input type="text" id="friend-id" placeholder="বন্ধুর আইডি দিন">
+    <button class="btn" style="background: #5271FF;" onclick="checkAndCall()">কল করুন 📞</button>
+
+    <div id="video-container">
+        <video id="remote-video" autoplay></video>
+        <button class="btn" style="background: #FF3131;" onclick="location.reload()">কল কাটুন ✖</button>
+    </div>
+</div>
+
+<script>
+    // ১. ফায়ারবেস কনফিগারেশন (তোমার দেওয়া তথ্য)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBxT3Id3erXo5XbcWZ1ZGG-cQ3CbQ66MF4",
+        authDomain: "bondhucal.firebaseapp.com",
+        databaseURL: "https://bondhucal-default-rtdb.firebaseio.com",
+        projectId: "bondhucal",
+        storageBucket: "bondhucal.firebasestorage.app",
+        messagingSenderId: "588571744660",
+        appId: "1:588571744660:web:9cf230c344a887aa799781"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ২. আইডি জেনারেশন এবং ২৪ ঘণ্টার লজিক
+    let myID = localStorage.getItem('bondhu_key');
+    let lastSeen = localStorage.getItem('last_seen');
+    const now = Date.now();
+
+    if (myID && lastSeen && (now - lastSeen > 24 * 60 * 60 * 1000)) {
+        alert("আপনার আইডিটি ২৪ ঘণ্টা পার হওয়ায় চিরতরে বন্ধ হয়ে গেছে। নতুন আইডি তৈরি হচ্ছে।");
+        myID = null;
+    }
+
+    if (!myID) {
+        myID = 'BN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('bondhu_key', myID);
+    }
+    localStorage.setItem('last_seen', now);
+    document.getElementById('my-id-display').innerText = myID;
+
+    // ৩. দেশ শনাক্তকরণ
+    fetch('https://ipapi.co/json/').then(res => res.json()).then(data => {
+        document.getElementById('country-info').innerText = "দেশ: " + data.country_name + " " + data.country_emoji;
+        updateStatus(data.country_name);
+    });
+
+    // ৪. অনলাইন স্ট্যাটাস আপডেট
+    function updateStatus(country) {
+        const userRef = db.ref('users/' + myID);
+        userRef.set({
+            id: myID,
+            country: country,
+            last_seen: Date.now(),
+            status: 'online'
+        });
+        userRef.onDisconnect().remove();
+        document.getElementById('online-status').innerText = "অনলাইন 🟢";
+    }
+
+    // ৫. PeerJS কলিং সেটআপ
+    const peer = new Peer(myID);
+    let localStream;
+
+    peer.on('call', call => {
+        if(confirm("ইনকামিং কল! আপনি কি রিসিভ করবেন?")) {
+            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                call.answer(stream);
+                showVideo(call);
+            });
+        }
+    });
+
+    function checkAndCall() {
+        const friendID = document.getElementById('friend-id').value;
+        if (!friendID) return alert("আইডি দিন!");
+
+        db.ref('users/' + friendID).once('value', snapshot => {
+            if (snapshot.exists()) {
+                startCall(friendID);
+            } else {
+                alert("এই ইউজারটি অফলাইনে আছে বা আইডিটি ভুল।");
+            }
+        });
+    }
+
+    function startCall(id) {
+        navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+            const call = peer.call(id, stream);
+            showVideo(call);
+        });
+    }
+
+    function showVideo(call) {
+        document.getElementById('video-container').style.display = 'block';
+        call.on('stream', remoteStream => {
+            document.getElementById('remote-video').srcObject = remoteStream;
+        });
+    }
+</script>
+
+</body>
+</html>
