@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BondhuCall - Anonymous P2P</title>
+    <title>BondhuCall - Secure P2P</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
@@ -13,13 +13,15 @@
     <style>
         :root {
             --bg: #FFDE59;
-            --card: #FF914D;
+            --main: #FF914D;
             --white: #FFFFFF;
             --black: #000000;
-            --green: #4CAF50;
-            --blue: #5271FF;
-            --red: #FF3131;
+            --btn-call: #5271FF;
+            --btn-end: #FF3131;
         }
+
+        /* Disable Selection */
+        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
         body {
             font-family: 'Fredoka One', cursive;
@@ -29,37 +31,39 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
 
-        .main-container {
-            background: var(--card);
+        .app-card {
+            background: var(--main);
             padding: 30px;
-            border-radius: 40px;
-            border: 6px solid var(--black);
-            box-shadow: 12px 12px 0px var(--black);
-            width: 360px;
+            border-radius: 45px;
+            border: 7px solid var(--black);
+            box-shadow: 15px 15px 0px var(--black);
+            width: 350px;
             text-align: center;
+            position: relative;
         }
 
         .status-pill {
             display: inline-block;
-            padding: 6px 18px;
+            padding: 5px 20px;
             background: var(--white);
             border: 3px solid var(--black);
             border-radius: 50px;
-            font-size: 14px;
-            margin-bottom: 15px;
+            font-size: 13px;
+            margin-bottom: 10px;
         }
 
-        .id-display {
+        .id-container {
             background: var(--white);
             border: 4px solid var(--black);
-            padding: 15px;
+            padding: 12px;
             border-radius: 20px;
             margin: 15px 0;
-            font-size: 20px;
-            color: var(--red);
-            letter-spacing: 1px;
+            font-size: 22px;
+            color: var(--btn-end);
+            cursor: pointer;
         }
 
         input {
@@ -69,68 +73,64 @@
             border-radius: 15px;
             border: 4px solid var(--black);
             font-family: inherit;
+            text-align: center;
             outline: none;
         }
 
-        .btn {
-            padding: 12px 25px;
+        .action-btn {
+            width: 100%;
+            padding: 15px;
             border-radius: 20px;
             border: 4px solid var(--black);
-            box-shadow: 5px 5px 0px var(--black);
+            box-shadow: 6px 6px 0px var(--black);
             cursor: pointer;
             font-family: inherit;
             font-size: 18px;
             color: var(--white);
-            transition: 0.2s;
-            width: 100%;
             margin-top: 10px;
+            transition: 0.1s;
         }
 
-        .btn:active {
-            transform: translate(3px, 3px);
-            box-shadow: 2px 2px 0px var(--black);
-        }
+        .action-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px var(--black); }
 
-        #video-box {
-            margin-top: 20px;
-            display: none;
-        }
+        #stream-zone { margin-top: 20px; display: none; }
+        video { width: 100%; border: 5px solid var(--black); border-radius: 25px; background: #000; }
 
-        video {
-            width: 100%;
-            border: 4px solid var(--black);
-            border-radius: 20px;
-            background: var(--black);
-        }
-
-        .label { font-size: 14px; color: var(--black); margin-bottom: 5px; }
+        .footer-text { font-size: 12px; margin-top: 10px; color: #333; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-<div class="main-container">
-    <div class="status-pill" id="status-tag">Connecting... 🟡</div>
-    <h1 style="margin: 0; color: white; -webkit-text-stroke: 1.5px black;">BondhuCall</h1>
+<div class="app-card">
+    <div class="status-pill" id="st-tag">Connecting... 🟡</div>
+    <h1 style="margin:0; color:white; -webkit-text-stroke: 1.5px black; font-size: 35px;">BONDHU CALL</h1>
     
-    <div class="label">Your Private ID:</div>
-    <div class="id-display" id="my-id-text">GENERATING...</div>
+    <div style="font-size: 14px; margin-top: 10px;">YOUR PRIVATE ID:</div>
+    <div class="id-container" id="my-id-val">READYING...</div>
     
-    <div class="label" id="location-text">Location: Detecting...</div>
+    <div id="loc-val" style="font-size: 13px;">Detecting Location...</div>
 
-    <hr style="border: 2px solid black; margin: 20px 0;">
+    <hr style="border: 2.5px solid black; margin: 20px 0;">
 
-    <input type="text" id="friend-id-input" placeholder="Enter Friend's ID">
-    <button class="btn" style="background: var(--blue);" onclick="initiateCall()">Call Friend 📞</button>
+    <input type="text" id="target-input" placeholder="Friend's Private ID">
+    <button class="action-btn" style="background: var(--btn-call);" onclick="_0xstartCall()">START CALL 📞</button>
 
-    <div id="video-box">
-        <video id="remote-stream" autoplay playsinline></video>
-        <button class="btn" style="background: var(--red);" onclick="location.reload()">End Call ✖</button>
+    <div id="stream-zone">
+        <video id="v-remote" autoplay playsinline></video>
+        <button class="action-btn" style="background: var(--btn-end);" onclick="location.reload()">TERMINATE ✖</button>
     </div>
+
+    <div class="footer-text">Secure P2P Encryption Active</div>
 </div>
 
 <script>
-    // Firebase Configuration
-    const firebaseConfig = {
+    // Security: Block F12 and Ctrl+U
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 85 || e.keyCode == 73 || e.keyCode == 74))) return false;
+    };
+
+    // Obfuscated Firebase Config & Logic
+    const _0xcnf = {
         apiKey: "AIzaSyBxT3Id3erXo5XbcWZ1ZGG-cQ3CbQ66MF4",
         authDomain: "bondhucal.firebaseapp.com",
         databaseURL: "https://bondhucal-default-rtdb.firebaseio.com",
@@ -140,82 +140,68 @@
         appId: "1:588571744660:web:9cf230c344a887aa799781"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    firebase.initializeApp(_0xcnf);
+    const _0xdb = firebase.database();
 
-    // ID Setup & 24h Expiry
-    let myID = localStorage.getItem('bondhu_key');
-    let lastVisit = localStorage.getItem('last_visit');
-    const currentTime = Date.now();
-
-    if (myID && lastVisit && (currentTime - lastVisit > 24 * 60 * 60 * 1000)) {
-        myID = null; // Expired
+    // Identity Manager
+    let _0xuid = localStorage.getItem('_bk');
+    let _0xlv = localStorage.getItem('_lv');
+    if (_0xuid && _0xlv && (Date.now() - _0xlv > 86400000)) _0xuid = null;
+    if (!_0xuid) {
+        _0xuid = 'XID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        localStorage.setItem('_bk', _0xuid);
     }
+    localStorage.setItem('_lv', Date.now());
+    document.getElementById('my-id-val').innerText = _0xuid;
 
-    if (!myID) {
-        myID = 'UID-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-        localStorage.setItem('bondhu_key', myID);
-    }
-    localStorage.setItem('last_visit', currentTime);
-    document.getElementById('my-id-text').innerText = myID;
+    // Networking logic
+    function _0xinit() {
+        const _0xref = _0xdb.ref('users/' + _0xuid);
+        _0xref.set({ id: _0xuid, st: 'on', ct: 'Detecting...' });
+        _0xref.onDisconnect().remove();
+        document.getElementById('st-tag').innerText = "ONLINE 🟢";
+        document.getElementById('st-tag').style.background = "#e6ffed";
 
-    // Location & Online Status
-    function startSystem() {
-        const userRef = db.ref('users/' + myID);
-        
-        // Instant Online Update
-        userRef.set({ id: myID, status: 'online', country: 'Searching...' });
-        userRef.onDisconnect().remove();
-        document.getElementById('status-tag').innerText = "Online 🟢";
-
-        // Fetch Country with HTTPS
         fetch('https://ipapi.co/json/')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('location-text').innerText = "Location: " + data.country_name;
-                userRef.update({ country: data.country_name });
-            })
-            .catch(() => {
-                document.getElementById('location-text').innerText = "Location: Unknown";
-            });
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('loc-val').innerText = "Location: " + d.country_name;
+                _0xref.update({ ct: d.country_name });
+            }).catch(() => { document.getElementById('loc-val').innerText = "Location: Protected"; });
     }
 
-    // PeerJS Calling Logic
-    const peer = new Peer(myID);
+    // Calling System (PeerJS)
+    const _0xpr = new Peer(_0xuid);
 
-    peer.on('call', call => {
-        if(confirm("Incoming Call! Answer?")) {
-            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
-                call.answer(stream);
-                handleStream(call);
+    _0xpr.on('call', c => {
+        if(confirm("Incoming Call! Accept?")) {
+            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(s => {
+                c.answer(s);
+                _0xshow(c);
             });
         }
     });
 
-    function initiateCall() {
-        const targetID = document.getElementById('friend-id-input').value;
-        if (!targetID) return alert("Please enter an ID");
+    function _0xstartCall() {
+        const _0xtid = document.getElementById('target-input').value;
+        if (!_0xtid) return alert("Enter ID first!");
 
-        db.ref('users/' + targetID).once('value', snapshot => {
-            if (snapshot.exists()) {
-                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
-                    const call = peer.call(targetID, stream);
-                    handleStream(call);
+        _0xdb.ref('users/' + _0xtid).once('value', s => {
+            if (s.exists()) {
+                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(st => {
+                    const c = _0xpr.call(_0xtid, st);
+                    _0xshow(c);
                 });
-            } else {
-                alert("User is Offline or ID is wrong!");
-            }
+            } else alert("Friend is OFFLINE!");
         });
     }
 
-    function handleStream(call) {
-        document.getElementById('video-box').style.display = 'block';
-        call.on('stream', stream => {
-            document.getElementById('remote-stream').srcObject = stream;
-        });
+    function _0xshow(c) {
+        document.getElementById('stream-zone').style.display = 'block';
+        c.on('stream', rs => { document.getElementById('v-remote').srcObject = rs; });
     }
 
-    startSystem();
+    _0xinit();
 </script>
 
 </body>
