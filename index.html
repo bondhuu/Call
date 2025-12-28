@@ -23,17 +23,26 @@
         .user-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 2px solid #eee; cursor: pointer; font-size: 13px; }
         #video-zone { margin-top: 20px; display: none; }
         video { width: 100%; border: 5px solid var(--black); border-radius: 20px; background: #000; }
+        #incoming-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; flex-direction:column; justify-content:center; align-items:center; z-index:9999; }
     </style>
 </head>
 <body>
+
+<div id="incoming-overlay">
+    <h2 id="caller-info">Incoming Call...</h2>
+    <div class="btn-group" style="width: 80%;">
+        <button class="btn" style="background: var(--green);" id="accept-btn">ACCEPT</button>
+        <button class="btn" style="background: var(--red);" id="reject-btn">REJECT</button>
+    </div>
+</div>
 
 <div class="container">
     <div class="app-card">
         <div class="status-badge" id="st-tag">CONNECTING... 🟡</div>
         <h1 style="margin:0; color:white; -webkit-text-stroke: 1.2px black;">BONDHUCALL</h1>
-        <p style="font-size: 12px; margin: 10px 0 0;">YOUR PRIVATE ID (CLICK TO COPY):</p>
+        <p style="font-size: 12px; margin: 10px 0 0;">YOUR ID (CLICK TO COPY):</p>
         <div class="id-box" id="my-id-display" onclick="copyID()">LOADING...</div>
-        <input type="text" id="target-id" placeholder="Enter Friend's ID">
+        <input type="text" id="target-id" placeholder="Paste Friend's ID">
         <div class="btn-group">
             <button class="btn" style="background: var(--blue);" onclick="startCall(true)">VIDEO 🎥</button>
             <button class="btn" style="background: var(--green);" onclick="startCall(false)">AUDIO 📞</button>
@@ -45,7 +54,7 @@
     </div>
     <div class="users-panel">
         <h3 style="margin-top:0; font-size: 16px; text-align: center;">ACTIVE USERS 🌎</h3>
-        <div id="active-list">Searching for peers...</div>
+        <div id="active-list">Searching...</div>
     </div>
 </div>
 
@@ -65,11 +74,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const ringtone = document.getElementById('ringtone');
-
-    // Request Notification Permission
-    if ("Notification" in window) {
-        Notification.requestPermission();
-    }
+    const overlay = document.getElementById('incoming-overlay');
 
     let myID = localStorage.getItem('p_id') || 'BC-' + Math.random().toString(36).substr(2, 7).toUpperCase();
     localStorage.setItem('p_id', myID);
@@ -77,18 +82,15 @@
 
     const peer = new Peer(myID);
     let myCountry = "Unknown";
+    let localStream;
 
     function init() {
         const userRef = db.ref('users/' + myID);
-        setInterval(() => {
-            userRef.set({ id: myID, country: myCountry, last_seen: Date.now() });
-        }, 3000);
+        setInterval(() => userRef.set({ id: myID, country: myCountry, last_seen: Date.now() }), 3000);
         userRef.onDisconnect().remove();
         document.getElementById('st-tag').innerText = "ONLINE 🟢";
 
-        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
-            myCountry = d.country_name;
-        });
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => { myCountry = d.country_name; });
 
         db.ref('users').on('value', snapshot => {
             const listDiv = document.getElementById('active-list');
@@ -103,61 +105,51 @@
                     listDiv.appendChild(item);
                 }
             });
-            if(listDiv.innerHTML === '') listDiv.innerText = "No one else is online.";
         });
     }
 
-    function copyID() {
-        navigator.clipboard.writeText(myID);
-        alert("ID Copied!");
-    }
+    function copyID() { navigator.clipboard.writeText(myID); alert("ID Copied!"); }
 
-    function showNotification(callerID) {
-        if (Notification.permission === "granted") {
-            new Notification("Incoming Call", {
-                body: "Friend " + callerID + " is calling you!",
-                icon: "https://cdn-icons-png.flaticon.com/512/3616/3616215.png"
-            });
-        }
-    }
-
-    // Handle Incoming Call
+    // কল রিসিভ করার লজিক
     peer.on('call', call => {
-        ringtone.play(); // Start Ringing
-        showNotification(call.peer); // Try Background Notification
+        ringtone.play().catch(e => console.log("Auto-play blocked"));
+        document.getElementById('caller-info').innerText = "Call from: " + call.peer;
+        overlay.style.display = 'flex';
 
-        const type = call.options.metadata?.video ? "Video" : "Audio";
-        
-        setTimeout(() => { // Small delay to let ringtone start
-            if(confirm(`Incoming ${type} Call from ${call.peer}! Answer?`)) {
-                ringtone.pause();
-                ringtone.currentTime = 0;
-                navigator.mediaDevices.getUserMedia({video: call.options.metadata?.video, audio: true}).then(stream => {
-                    call.answer(stream);
-                    handleStream(call);
-                });
-            } else {
-                ringtone.pause();
-                ringtone.currentTime = 0;
-            }
-        }, 500);
+        document.getElementById('accept-btn').onclick = () => {
+            overlay.style.display = 'none';
+            ringtone.pause();
+            const isVideo = call.options.metadata?.video;
+            navigator.mediaDevices.getUserMedia({video: isVideo, audio: true})
+            .then(stream => {
+                call.answer(stream);
+                handleStream(call);
+            }).catch(err => alert("Permission Error: " + err));
+        };
+
+        document.getElementById('reject-btn').onclick = () => {
+            overlay.style.display = 'none';
+            ringtone.pause();
+            call.close();
+        };
     });
 
     function startCall(withVideo) {
         const tID = document.getElementById('target-id').value.trim();
         if(!tID) return alert("Enter an ID!");
 
-        navigator.mediaDevices.getUserMedia({video: withVideo, audio: true}).then(stream => {
+        navigator.mediaDevices.getUserMedia({video: withVideo, audio: true})
+        .then(stream => {
             const call = peer.call(tID, stream, {metadata: {video: withVideo}});
             handleStream(call);
-        }).catch(() => alert("Camera/Mic Permission Denied!"));
+        }).catch(err => alert("Camera/Mic Error. Please Allow Permissions!"));
     }
 
     function handleStream(call) {
         document.getElementById('video-zone').style.display = 'block';
-        call.on('stream', remoteStream => {
-            document.getElementById('remote-v').srcObject = remoteStream;
-            ringtone.pause(); // Stop ringtone if call is connected
+        call.on('stream', rs => {
+            document.getElementById('remote-v').srcObject = rs;
+            ringtone.pause();
         });
     }
 
