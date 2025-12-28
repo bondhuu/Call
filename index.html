@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BondhuCall - Secure P2P</title>
+    <title>BondhuCall - Fixed & Secure</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
@@ -11,125 +11,41 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        :root {
-            --bg: #FFDE59;
-            --main: #FF914D;
-            --white: #FFFFFF;
-            --black: #000000;
-            --btn-call: #5271FF;
-            --btn-end: #FF3131;
-        }
-
-        /* Disable Selection */
-        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-
-        body {
-            font-family: 'Fredoka One', cursive;
-            background-color: var(--bg);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .app-card {
-            background: var(--main);
-            padding: 30px;
-            border-radius: 45px;
-            border: 7px solid var(--black);
-            box-shadow: 15px 15px 0px var(--black);
-            width: 350px;
-            text-align: center;
-            position: relative;
-        }
-
-        .status-pill {
-            display: inline-block;
-            padding: 5px 20px;
-            background: var(--white);
-            border: 3px solid var(--black);
-            border-radius: 50px;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .id-container {
-            background: var(--white);
-            border: 4px solid var(--black);
-            padding: 12px;
-            border-radius: 20px;
-            margin: 15px 0;
-            font-size: 22px;
-            color: var(--btn-end);
-            cursor: pointer;
-        }
-
-        input {
-            width: 85%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 15px;
-            border: 4px solid var(--black);
-            font-family: inherit;
-            text-align: center;
-            outline: none;
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            border-radius: 20px;
-            border: 4px solid var(--black);
-            box-shadow: 6px 6px 0px var(--black);
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 18px;
-            color: var(--white);
-            margin-top: 10px;
-            transition: 0.1s;
-        }
-
-        .action-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px var(--black); }
-
+        :root { --bg: #FFDE59; --main: #FF914D; --white: #FFFFFF; --black: #000000; --btn-call: #5271FF; --btn-end: #FF3131; }
+        body { font-family: 'Fredoka One', cursive; background-color: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .app-card { background: var(--main); padding: 30px; border-radius: 45px; border: 7px solid var(--black); box-shadow: 15px 15px 0px var(--black); width: 340px; text-align: center; }
+        .status-pill { display: inline-block; padding: 5px 20px; background: var(--white); border: 3px solid var(--black); border-radius: 50px; font-size: 13px; margin-bottom: 10px; }
+        .id-container { background: var(--white); border: 4px solid var(--black); padding: 12px; border-radius: 20px; margin: 15px 0; font-size: 22px; color: var(--btn-end); cursor: pointer; transition: 0.3s; }
+        .id-container:hover { background: #f0f0f0; }
+        input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 15px; border: 4px solid var(--black); font-family: inherit; text-align: center; font-size: 16px; }
+        .action-btn { width: 100%; padding: 15px; border-radius: 20px; border: 4px solid var(--black); box-shadow: 6px 6px 0px var(--black); cursor: pointer; font-family: inherit; font-size: 18px; color: var(--white); margin-top: 10px; }
         #stream-zone { margin-top: 20px; display: none; }
         video { width: 100%; border: 5px solid var(--black); border-radius: 25px; background: #000; }
-
-        .footer-text { font-size: 12px; margin-top: 10px; color: #333; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
 <div class="app-card">
     <div class="status-pill" id="st-tag">Connecting... 🟡</div>
-    <h1 style="margin:0; color:white; -webkit-text-stroke: 1.5px black; font-size: 35px;">BONDHU CALL</h1>
+    <h1 style="margin:0; color:white; -webkit-text-stroke: 1.5px black;">BONDHU CALL</h1>
     
-    <div style="font-size: 14px; margin-top: 10px;">YOUR PRIVATE ID:</div>
-    <div class="id-container" id="my-id-val">READYING...</div>
+    <div style="font-size: 12px; margin-top: 10px;">CLICK ID TO COPY:</div>
+    <div class="id-container" id="my-id-val" onclick="copyMyID()">READYING...</div>
     
-    <div id="loc-val" style="font-size: 13px;">Detecting Location...</div>
+    <div id="loc-val" style="font-size: 13px;">Detecting...</div>
 
-    <hr style="border: 2.5px solid black; margin: 20px 0;">
+    <hr style="border: 2px solid black; margin: 20px 0;">
 
-    <input type="text" id="target-input" placeholder="Friend's Private ID">
+    <input type="text" id="target-input" placeholder="Paste Friend's ID here">
     <button class="action-btn" style="background: var(--btn-call);" onclick="_0xstartCall()">START CALL 📞</button>
 
     <div id="stream-zone">
         <video id="v-remote" autoplay playsinline></video>
-        <button class="action-btn" style="background: var(--btn-end);" onclick="location.reload()">TERMINATE ✖</button>
+        <button class="action-btn" style="background: var(--btn-end);" onclick="location.reload()">END CALL ✖</button>
     </div>
-
-    <div class="footer-text">Secure P2P Encryption Active</div>
 </div>
 
 <script>
-    // Security: Block F12 and Ctrl+U
-    document.onkeydown = function(e) {
-        if(e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 85 || e.keyCode == 73 || e.keyCode == 74))) return false;
-    };
-
-    // Obfuscated Firebase Config & Logic
     const _0xcnf = {
         apiKey: "AIzaSyBxT3Id3erXo5XbcWZ1ZGG-cQ3CbQ66MF4",
         authDomain: "bondhucal.firebaseapp.com",
@@ -139,42 +55,32 @@
         messagingSenderId: "588571744660",
         appId: "1:588571744660:web:9cf230c344a887aa799781"
     };
-
     firebase.initializeApp(_0xcnf);
     const _0xdb = firebase.database();
 
-    // Identity Manager
-    let _0xuid = localStorage.getItem('_bk');
-    let _0xlv = localStorage.getItem('_lv');
-    if (_0xuid && _0xlv && (Date.now() - _0xlv > 86400000)) _0xuid = null;
-    if (!_0xuid) {
-        _0xuid = 'XID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        localStorage.setItem('_bk', _0xuid);
-    }
-    localStorage.setItem('_lv', Date.now());
+    let _0xuid = localStorage.getItem('_bk') || 'XID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    localStorage.setItem('_bk', _0xuid);
     document.getElementById('my-id-val').innerText = _0xuid;
 
-    // Networking logic
-    function _0xinit() {
-        const _0xref = _0xdb.ref('users/' + _0xuid);
-        _0xref.set({ id: _0xuid, st: 'on', ct: 'Detecting...' });
-        _0xref.onDisconnect().remove();
-        document.getElementById('st-tag').innerText = "ONLINE 🟢";
-        document.getElementById('st-tag').style.background = "#e6ffed";
-
-        fetch('https://ipapi.co/json/')
-            .then(r => r.json())
-            .then(d => {
-                document.getElementById('loc-val').innerText = "Location: " + d.country_name;
-                _0xref.update({ ct: d.country_name });
-            }).catch(() => { document.getElementById('loc-val').innerText = "Location: Protected"; });
+    function copyMyID() {
+        navigator.clipboard.writeText(_0xuid);
+        alert("ID Copied: " + _0xuid);
     }
 
-    // Calling System (PeerJS)
-    const _0xpr = new Peer(_0xuid);
+    function _0xinit() {
+        const _0xref = _0xdb.ref('users/' + _0xuid);
+        _0xref.set({ id: _0xuid, st: 'on', ts: Date.now() });
+        _0xref.onDisconnect().remove();
+        document.getElementById('st-tag').innerText = "ONLINE 🟢";
 
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
+            document.getElementById('loc-val').innerText = "Location: " + d.country_name;
+        }).catch(() => { document.getElementById('loc-val').innerText = "Location: Protected"; });
+    }
+
+    const _0xpr = new Peer(_0xuid);
     _0xpr.on('call', c => {
-        if(confirm("Incoming Call! Accept?")) {
+        if(confirm("Incoming Call! Answer?")) {
             navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(s => {
                 c.answer(s);
                 _0xshow(c);
@@ -183,16 +89,19 @@
     });
 
     function _0xstartCall() {
-        const _0xtid = document.getElementById('target-input').value;
-        if (!_0xtid) return alert("Enter ID first!");
+        const _0xtid = document.getElementById('target-input').value.trim();
+        if (!_0xtid) return alert("Enter ID!");
 
+        // চেক করা হচ্ছে বন্ধু অনলাইনে আছে কি না
         _0xdb.ref('users/' + _0xtid).once('value', s => {
             if (s.exists()) {
                 navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(st => {
                     const c = _0xpr.call(_0xtid, st);
                     _0xshow(c);
-                });
-            } else alert("Friend is OFFLINE!");
+                }).catch(e => alert("Please allow Camera/Mic access!"));
+            } else {
+                alert("Friend is Offline! Make sure they have the site open.");
+            }
         });
     }
 
@@ -203,6 +112,6 @@
 
     _0xinit();
 </script>
-
 </body>
-</html>
+    </html>
+    
